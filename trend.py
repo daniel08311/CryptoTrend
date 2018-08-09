@@ -8,7 +8,11 @@ import pickle
 
 import _thread
 
+import xgboost as xgb
 
+import math
+
+import json
 
 from sklearn.utils import resample
 
@@ -19,6 +23,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix
 
 from sklearn.metrics import f1_score
+
+
 
 
 
@@ -108,21 +114,25 @@ class CryptoTrend():
 
             diff = y_raw[i+shift+shift_y]-y_raw[i+shift]
 
-            if diff/y_raw[i+shift] > 0.01 :
+            if diff/y_raw[i+shift] > 0.015 :
 
                 y_train_trend[i] = 0
 
-
-
-            elif diff/y_raw[i+shift] < -0.01:
+            elif diff/y_raw[i+shift] > 0.0075:
 
                 y_train_trend[i] = 1
 
+            elif diff/y_raw[i+shift] < -0.015:
 
+                y_train_trend[i] = 3
+
+            elif diff/y_raw[i+shift] < -0.0075:
+
+                y_train_trend[i] = 2
 
             else:
 
-                y_train_trend[i] = 2
+                y_train_trend[i] = 4
 
         
 
@@ -182,7 +192,7 @@ class CryptoTrend():
 
         
 
-        for i in range(3):
+        for i in range(5):
 
             print("class {} instances = {}".format(i,sum(y_train_trend==i)))
 
@@ -190,35 +200,30 @@ class CryptoTrend():
 
         idxs = []
 
-        for cla in range(3):
+        for cla in range(5):
 
             idxs.append([idx for idx,i in enumerate(y_train_trend) if i == cla])
 
 
 
-        idxs[2] = resample(idxs[2], n_samples=len(idxs[0])+len(idxs[1]), random_state=0)
+        idxs[-1] = resample(idxs[-1], n_samples=3000, random_state=0)
 
 
-
-        x_train = np.vstack((x_train[idxs[0]],x_train[idxs[1]],x_train[idxs[2]]))
-
-        y_train_trend = np.hstack((y_train_trend[idxs[0]],y_train_trend[idxs[1]],y_train_trend[idxs[2]]))
-
-
-
-        x_train_xgb = x_train.reshape(-1, x_train.shape[1]*x_train.shape[2])
+        x_train_combine = x_train[idxs[0]]
+        y_train_trend_combine = y_train_trend[idxs[0]]
+        
+        for cla in range(4):
+            x_train_combine = np.vstack((x_train_combine, x_train[idxs[cla+1]]))
+            y_train_trend_combine = np.hstack((y_train_trend_combine,y_train_trend[idxs[cla+1]]))
 
 
+        x_train_xgb = x_train_combine.reshape(-1, x_train_combine.shape[1]*x_train_combine.shape[2])
 
-        x_train, x_test, y_train_trend, y_test_trend = train_test_split(x_train_xgb, y_train_trend, test_size=0.3, random_state=42)
+        x_train, x_test, y_train_trend, y_test_trend = train_test_split(x_train_xgb, y_train_trend_combine, test_size=0.3, random_state=42)
 
-
-
-        rf = RandomForestClassifier(n_estimators=50, max_depth=15, random_state=0, n_jobs=14)
+        rf = RandomForestClassifier(n_estimators=50, max_depth=15, max_features=int(math.sqrt(x_train.shape[1])/4.2), random_state=0, n_jobs=14)
 
         rf.fit(x_train, y_train_trend)
-
-
 
         print("\nConfusuin Matrix :")
 
@@ -226,10 +231,7 @@ class CryptoTrend():
 
         print("\nF1 Score : {}".format(f1_score(rf.predict(x_test), y_test_trend, average='macro')))
 
-        print("\n===========================================\n") 
-
         
-
         self.save_pickle(rf, 'model/rf_{}_{}.pickle'.format(exchange, model_name))
 
         
@@ -264,19 +266,32 @@ class CryptoTrend():
 
         print("Prediction of [{}] Market Based On [{}] Model".format(exchange, model_name))
 
-        print("BULL : {}, BEAR : {}, NEUTRAL : {}".format(predict[0], predict[1], predict[2]))
+        print("Bull : {}, Weak Bull : {}, Weak Bear : {}, Bear : {}, Neutral : {}".format(predict[0], predict[1], predict[2], predict[3], predict[4]))
 
         print("\n===================================================\n")
 
+        return (predict)
         
+
+    def save_predict(self, predictions):
+
+        data = []
+        for exchange, predicts in zip(self.EXCHANGES, predictions):
+            dic = {}
+            dic['name'] = exchange
+            for prob, cla in zip(predicts,['bull','wbull','bear','wbear','n']):
+                dic[cla]="%.3f" % prob
+            data.append(dic)    
+        json_data = json.dumps(data)
+        with open('predict_{}.json'.format(self.MODEL_NAME), 'w') as outfile:
+            json.dump(data, outfile)
 
     def predict(self):
 
+        predictions = []
+
         for exchange in self.EXCHANGES:
 
-            self.predict_trend(exchange, self.MODEL_NAME)
+            predictions.append(self.predict_trend(exchange, self.MODEL_NAME))
 
-
-
-
-
+        self.save_predict(predictions)

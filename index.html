@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>test</title>
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+	<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+</head>
+<body>
+
+	<script src="/socket.io/socket.io.js"></script>
+	 <script src="https://code.jquery.com/jquery-3.3.1.js" integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60=" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js" integrity="sha256-T0Vest3yCU7pafRw9r+settMBX6JkKN06dqBnpQ8d30=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+	<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+	<script>
+	  var socket = io.connect(); 
+	  socket.on('exchange', function(message){
+  		var html = "";
+	  	for(var i = 0; i < message.test.length; i++){
+	  		html += "<div class='col-md-2'><h3>" + message.test[i]['name'] + " :</h3>";
+			html += "<div> Strong Bull : " + message.test[i]['bull'];
+			html += "</div><div> Weak Bull : " + message.test[i]['wbull'];	
+			html += "</div><div> Weak Bear : " + message.test[i]['wbear'];	
+			html += "</div><div> Strong Bear : " + message.test[i]['bear'];
+			html += "</div><div> Neutral : " + message.test[i]['n'] + "</div></div>";			
+	  	}
+	  	html+="</div>";
+	  	document.getElementById('data').innerHTML = html;
+	  });
+	  // socket.on('data', function(message) {
+	  // 	var html = "";
+	  //   document.getElementById('data').innerHTML = "BULL : " + message.test["bull"];
+	  // })
+	</script>
+	<div class="row justify-content-md-center my-2" id="data">
+	</div>
+</body>
+</html>
