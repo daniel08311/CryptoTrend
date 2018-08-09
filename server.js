@@ -10,25 +10,28 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 var data = JSON.parse(fs.readFileSync('predict_3-Hour.json', 'utf8'));
 
+setInterval(function() {
+ data = JSON.parse(fs.readFileSync('predict_3-Hour.json', 'utf8'));
+}, 50000);
+
 app.get('/', function (req, res) {
 	res.sendFile(path.join(__dirname+'/index.html'));
 	io.sockets.on('connection', function (socket) {
 		setInterval(function() {
+			//var data = JSON.parse(fs.readFileSync('predict_3-Hour.json', 'utf8'));
 			socket.emit('exchange', {
 				test : data
 			});
 			socket.emit('data', {
 				test : data.binance
 			})
-		}, 1000);
+		}, 3000);
 
 	});
 })
 
 
-console.log(data.binance);
-
-var server = app.listen("12345", "127.0.0.1", function () {
+var server = app.listen("12345", "192.168.11.115", function () {
    var host = server.address().address
    var port = server.address().port
    console.log("Example app listening at http://%s:%s", host, port)

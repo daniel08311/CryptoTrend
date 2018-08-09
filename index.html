@@ -18,7 +18,7 @@
 	  socket.on('exchange', function(message){
   		var html = "";
 	  	for(var i = 0; i < message.test.length; i++){
-	  		html += "<div class='col-md-2'><h3>" + message.test[i]['name'] + " :</h3>";
+	  		html += "<div class='col-sm-2'><h3>" + message.test[i]['name'] + " :</h3>";
 			html += "<div> Strong Bull : " + message.test[i]['bull'];
 			html += "</div><div> Weak Bull : " + message.test[i]['wbull'];	
 			html += "</div><div> Weak Bear : " + message.test[i]['wbear'];	
@@ -35,5 +35,7 @@
 	</script>
 	<div class="row justify-content-md-center my-2" id="data">
 	</div>
+	<div id="main"></div>
+    </script>
 </body>
 </html>

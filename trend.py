@@ -280,7 +280,7 @@ class CryptoTrend():
             dic = {}
             dic['name'] = exchange
             for prob, cla in zip(predicts,['bull','wbull','bear','wbear','n']):
-                dic[cla]="%.3f" % prob
+                dic[cla]="%.2f" % prob
             data.append(dic)    
         json_data = json.dumps(data)
         with open('predict_{}.json'.format(self.MODEL_NAME), 'w') as outfile:

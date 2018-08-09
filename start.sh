@@ -6,6 +6,6 @@ do
 
 python3 test.py  
 
-sleep 30  
+sleep 15  
 
 done
