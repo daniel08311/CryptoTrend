@@ -9,7 +9,7 @@ parser.add_argument("-exchange", help="Choose a exchange to train with", type=st
 parser.add_argument("-name", help="Name your trained model", type=str, nargs='?', default="1-hour")
 parser.add_argument("-thread", help="How many threads do you want use while training?", type=int, nargs='?', default=4)
 parser.add_argument("-shiftx", help="Give the numbers of consecutive trading logs to train", type=int, nargs='?', default=200)
-parser.add_argument("-shifty", help="How far do you want to predict? For example, 20 means predciting trend after 20 trades from now", type=int, nargs='?', default=100)
+parser.add_argument("-shifty", help="How far do you want to predict? For example, 20 means predicting trend after 20 trades from now", type=int, nargs='?', default=100)
 parser.add_argument("-ls", help="list all the saved model names", const=1, nargs='?')
 # parser.add_argument("ls_model", help="List all models", type=bool, nargs='?', default=False)
 
