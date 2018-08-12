@@ -3,3 +3,7 @@ latest_data/
 training_data/
 training_data_raw/
 node_modules/
+predict/
+.vscode/
+__pycache__/
+package-lock.json
