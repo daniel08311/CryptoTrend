@@ -2,6 +2,7 @@ import trend
 import time
 import argparse
 import json
+import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-exchange", help="Choose a exchange to train with", type=str, nargs='?', default="binance")
@@ -13,6 +14,21 @@ parser.add_argument("-ls", help="list all the saved model names", const=1, nargs
 # parser.add_argument("ls_model", help="List all models", type=bool, nargs='?', default=False)
 
 args = parser.parse_args()
+
+if os.path.exists("training_data"):
+    os.mkdir("training_data")
+
+if os.path.exists("training_data_raw"):
+    os.mkdir("training_data_raw")
+
+if os.path.exists("model"):
+    os.mkdir("model")
+
+if os.path.exists("lastest_data"):
+    os.mkdir("lastest_data")
+
+if os.path.exists("predict"):
+    os.mkdir("predict")
 
 if args.ls:
     try:
@@ -39,9 +55,9 @@ else:
             lists[args.name + "_" + args.name] = True
             json.dump(lists, data_file)
 
-    test = trend.CryptoTrend(args.exchange, args.shiftx, args.shifty, args.name, args.thread)
-    test.get()
-    test.parse()
-    test.train()
-    test.predict()
+    trend = trend.CryptoTrend(args.exchange, args.shiftx, args.shifty, args.name, args.thread)
+    trend.get()
+    trend.parse()
+    trend.train()
+    trend.predict()
 
