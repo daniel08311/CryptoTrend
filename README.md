@@ -42,6 +42,6 @@
       python3 run.py -ls
     ```
 ### Some Notes ###
- * After each training, the prediction result with the latest trade will be put in predict/
+ * After each training, the prediction result given the latest trade will be put in predict/
  * There are some default .sh files which runs the training ( run all the .sh file to repeatedly train the four exchange ) 
  * We support binance, bitfinex, bittrex and huobipro currently. Entering other exchanges yields error.
