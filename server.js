@@ -8,6 +8,8 @@ var app = express();
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
+app.use('/js', express.static(__dirname + '/node_modules/echarts/dist/')); 
+
 var data = JSON.parse(fs.readFileSync('predict_3-Hour.json', 'utf8'));
 
 setInterval(function() {
@@ -25,13 +27,13 @@ app.get('/', function (req, res) {
 			socket.emit('data', {
 				test : data.binance
 			})
-		}, 3000);
+		}, 10000);
 
 	});
 })
 
 
-var server = app.listen("12345", "192.168.11.115", function () {
+var server = app.listen("12345", "127.0.0.1", function () {
    var host = server.address().address
    var port = server.address().port
    console.log("Example app listening at http://%s:%s", host, port)
