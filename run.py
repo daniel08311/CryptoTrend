@@ -54,7 +54,9 @@ else:
         with open('model_list.json','w') as data_file:    
             lists[args.exchange + "_" + args.name] = True
             json.dump(lists, data_file)
-
+    print("\n################################################################")
+    print("\nTraining on {} data with {} threads, Saving model as {}\n".format(args.exchange, args.thread, args.name))
+    print("################################################################\n")
     trend = trend.CryptoTrend(args.exchange, args.shiftx, args.shifty, args.name, args.thread)
     trend.get()
     trend.parse()

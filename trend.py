@@ -117,8 +117,6 @@ class CryptoTrend():
         with open('training_data/y_train_{}_{}.pickle'.format(exchange, model_name), 'rb') as handle:
             y_train_trend = pickle.load(handle)
 
-        print("Currently Training on [{}] Data, Model [{}]".format(exchange, model_name))
-
         for i in range(5):
             print("class {} instances = {}".format(i,sum(y_train_trend==i)))
 
