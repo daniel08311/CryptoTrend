@@ -149,7 +149,6 @@ class CryptoTrend():
         self.save_pickle(rf, 'model/rf_{}_{}.pickle'.format(exchange, model_name))
 
         
-
     def train(self):
 
         try:
@@ -176,7 +175,7 @@ class CryptoTrend():
 
         return (predict)
         
-        
+
     def save_predict(self, prediction):
 
         dic = {}
