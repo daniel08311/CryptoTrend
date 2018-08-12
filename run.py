@@ -15,19 +15,19 @@ parser.add_argument("-ls", help="list all the saved model names", const=1, nargs
 
 args = parser.parse_args()
 
-if os.path.exists("training_data"):
+if not os.path.exists("training_data"):
     os.mkdir("training_data")
 
-if os.path.exists("training_data_raw"):
+if not os.path.exists("training_data_raw"):
     os.mkdir("training_data_raw")
 
-if os.path.exists("model"):
+if not os.path.exists("model"):
     os.mkdir("model")
 
-if os.path.exists("lastest_data"):
-    os.mkdir("lastest_data")
+if not os.path.exists("latest_data"):
+    os.mkdir("latest_data")
 
-if os.path.exists("predict"):
+if not os.path.exists("predict"):
     os.mkdir("predict")
 
 if args.ls:
