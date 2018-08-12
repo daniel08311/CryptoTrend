@@ -52,7 +52,7 @@ else:
     except:
         lists = {}
         with open('model_list.json','w') as data_file:    
-            lists[args.name + "_" + args.name] = True
+            lists[args.exchange + "_" + args.name] = True
             json.dump(lists, data_file)
 
     trend = trend.CryptoTrend(args.exchange, args.shiftx, args.shifty, args.name, args.thread)
