@@ -27,6 +27,7 @@ class CryptoTrend():
         elif COIN == 'ETH':
             self.url = "http://jumpin.cc/BTC/WhaleSignalETH/"
 
+
     def request_data(self, url, path):
 
         res = requests.get(url)
@@ -34,6 +35,7 @@ class CryptoTrend():
         f.write(res.text)
         f.close()
         return(True)
+
 
     def get_train(self):
         url = self.url + "training_data_{}_log.txt".format(self.EXCHANGE)
@@ -118,11 +120,10 @@ class CryptoTrend():
 
         np.save('training_data/{}/x_train_{}_{}.npy'.format(coin, exchange, model_name), x_train_combine)
         np.save('training_data/{}/y_train_{}_{}.npy'.format(coin, exchange, model_name), y_train_trend_combine)
-        # self.save_pickle(x_train_combine, 'training_data/{}/x_train_{}_{}.pickle'.format(coin, exchange, model_name))
-        # self.save_pickle(y_train_trend_combine, 'training_data/{}/y_train_{}_{}.pickle'.format(coin, exchange, model_name))       
+    
         return(True)
     
-    
+
     def parse_test_data(self, exchange, coin, model_name):
   
         train_df = pd.read_csv("latest_data_raw/{}/{}.csv".format(coin, exchange))
@@ -138,6 +139,7 @@ class CryptoTrend():
         np.save('latest_data/{}/latest_{}_{}.npy'.format(coin, exchange, model_name), latest)
 
         return(True)
+
 
     def parse_train(self):
 
@@ -171,12 +173,6 @@ class CryptoTrend():
 
 
     def train_model(self, exchange, coin, model_name):
-
-        # with open('training_data/{}/x_train_{}_{}.pickle'.format(coin, exchange, model_name), 'rb') as handle:
-        #     x_train_combine = pickle.load(handle)
-
-        # with open('training_data/{}/y_train_{}_{}.pickle'.format(coin, exchange, model_name), 'rb') as handle:
-        #     y_train_trend_combine = pickle.load(handle)
         
         x_train_combine = np.load('training_data/{}/x_train_{}_{}.npy'.format(coin, exchange, model_name))
         y_train_trend_combine = np.load('training_data/{}/y_train_{}_{}.npy'.format(coin, exchange, model_name))
