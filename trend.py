@@ -116,8 +116,10 @@ class CryptoTrend():
             x_train_combine = np.vstack((x_train_combine, x_train[idxs[cla+1]]))
             y_train_trend_combine = np.hstack((y_train_trend_combine,y_train_trend[idxs[cla+1]]))
 
-        self.save_pickle(x_train_combine, 'training_data/{}/x_train_{}_{}.pickle'.format(coin, exchange, model_name))
-        self.save_pickle(y_train_trend_combine, 'training_data/{}/y_train_{}_{}.pickle'.format(coin, exchange, model_name))       
+        np.save('training_data/{}/x_train_{}_{}.npy'.format(coin, exchange, model_name), x_train_combine)
+        np.save('training_data/{}/y_train_{}_{}.npy'.format(coin, exchange, model_name), y_train_trend_combine)
+        # self.save_pickle(x_train_combine, 'training_data/{}/x_train_{}_{}.pickle'.format(coin, exchange, model_name))
+        # self.save_pickle(y_train_trend_combine, 'training_data/{}/y_train_{}_{}.pickle'.format(coin, exchange, model_name))       
         return(True)
     
     
@@ -132,8 +134,9 @@ class CryptoTrend():
 
         latest = x_raw[-shift:].reshape((1, x_raw[-shift:].shape[0], x_raw[-shift:].shape[1]))
         latest = latest.reshape(-1, latest.shape[1]*latest.shape[2])
-    
-        self.save_pickle(latest, 'latest_data/{}/latest_{}_{}.pickle'.format(coin, exchange, model_name))
+
+        np.save('latest_data/{}/latest_{}_{}.npy'.format(coin, exchange, model_name), latest)
+
         return(True)
 
     def parse_train(self):
@@ -166,14 +169,17 @@ class CryptoTrend():
             except Exception as e:
                 print(e)
 
-    
+
     def train_model(self, exchange, coin, model_name):
 
-        with open('training_data/{}/x_train_{}_{}.pickle'.format(coin, exchange, model_name), 'rb') as handle:
-            x_train_combine = pickle.load(handle)
+        # with open('training_data/{}/x_train_{}_{}.pickle'.format(coin, exchange, model_name), 'rb') as handle:
+        #     x_train_combine = pickle.load(handle)
 
-        with open('training_data/{}/y_train_{}_{}.pickle'.format(coin, exchange, model_name), 'rb') as handle:
-            y_train_trend_combine = pickle.load(handle)
+        # with open('training_data/{}/y_train_{}_{}.pickle'.format(coin, exchange, model_name), 'rb') as handle:
+        #     y_train_trend_combine = pickle.load(handle)
+        
+        x_train_combine = np.load('training_data/{}/x_train_{}_{}.npy'.format(coin, exchange, model_name))
+        y_train_trend_combine = np.load('training_data/{}/y_train_{}_{}.npy'.format(coin, exchange, model_name))
 
         x_train_xgb = x_train_combine.reshape(-1, x_train_combine.shape[1]*x_train_combine.shape[2])
         x_train, x_test, y_train_trend, y_test_trend = train_test_split(x_train_xgb, y_train_trend_combine, test_size=0.3, random_state=42)
@@ -203,9 +209,7 @@ class CryptoTrend():
         with open('model/{}/rf_{}_{}.pickle'.format(coin, exchange, model_name), 'rb') as handle:
             rf = pickle.load(handle)
 
-        with open('latest_data/{}/latest_{}_{}.pickle'.format(coin, exchange, model_name), 'rb') as handle:
-            latest = pickle.load(handle)
-
+        latest = np.load('latest_data/{}/latest_{}_{}.npy'.format(coin, exchange, model_name))
         predict = rf.predict_proba(latest)[0]
 
         print("\n##############################################################################\n")
