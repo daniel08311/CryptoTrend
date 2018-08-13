@@ -71,7 +71,7 @@ class CryptoTrend():
         feats = len(x_raw[0])
         shift = self.SHIFT_X
         shift_y = self.SHIFT_Y
-
+        
         x_train = np.zeros((log_count-shift-shift_y,shift,feats))
         y_train_trend = np.zeros(log_count-shift-shift_y)
 
@@ -80,29 +80,44 @@ class CryptoTrend():
             x_train[i] = x_raw[i:i+shift]
             diff = y_raw[i+shift+shift_y]-y_raw[i+shift]
 
-            if diff/y_raw[i+shift] > 0.015 :
+            if diff/y_raw[i+shift] > 0.012 :
 
                 y_train_trend[i] = 0
 
-            elif diff/y_raw[i+shift] > 0.0075:
+            elif diff/y_raw[i+shift] > 0.005:
 
                 y_train_trend[i] = 1
 
-            elif diff/y_raw[i+shift] < -0.015:
+            elif diff/y_raw[i+shift] < -0.012:
 
                 y_train_trend[i] = 3
 
-            elif diff/y_raw[i+shift] < -0.0075:
+            elif diff/y_raw[i+shift] < -0.005:
 
                 y_train_trend[i] = 2
 
             else:
 
                 y_train_trend[i] = 4
-   
-        self.save_pickle(x_train, 'training_data/{}/x_train_{}_{}.pickle'.format(coin, exchange, model_name))
-        self.save_pickle(y_train_trend, 'training_data/{}/y_train_{}_{}.pickle'.format(coin, exchange, model_name))       
 
+        for i in range(5):
+            print("class {} instances = {}".format(i,sum(y_train_trend==i)))
+
+        idxs = []
+        for cla in range(5):
+            idxs.append([idx for idx,i in enumerate(y_train_trend) if i == cla])
+
+        idxs[-1] = resample(idxs[-1], n_samples=len(idxs[0])+len(idxs[1])+len(idxs[2])+len(idxs[3]), random_state=0)
+
+        x_train_combine = x_train[idxs[0]]
+        y_train_trend_combine = y_train_trend[idxs[0]]
+        
+        for cla in range(4):
+            x_train_combine = np.vstack((x_train_combine, x_train[idxs[cla+1]]))
+            y_train_trend_combine = np.hstack((y_train_trend_combine,y_train_trend[idxs[cla+1]]))
+
+        self.save_pickle(x_train_combine, 'training_data/{}/x_train_{}_{}.pickle'.format(coin, exchange, model_name))
+        self.save_pickle(y_train_trend_combine, 'training_data/{}/y_train_{}_{}.pickle'.format(coin, exchange, model_name))       
         return(True)
     
     
@@ -144,35 +159,21 @@ class CryptoTrend():
 
                 
     def save_pickle(self, object_, path):
-
+        
         with open(path, 'wb') as handle:
-            pickle.dump(object_, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            try:
+                pickle.dump(object_, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            except Exception as e:
+                print(e)
 
     
     def train_model(self, exchange, coin, model_name):
 
         with open('training_data/{}/x_train_{}_{}.pickle'.format(coin, exchange, model_name), 'rb') as handle:
-            x_train = pickle.load(handle)
+            x_train_combine = pickle.load(handle)
 
         with open('training_data/{}/y_train_{}_{}.pickle'.format(coin, exchange, model_name), 'rb') as handle:
-            y_train_trend = pickle.load(handle)
-
-        for i in range(5):
-            print("class {} instances = {}".format(i,sum(y_train_trend==i)))
-
-        idxs = []
-        for cla in range(5):
-            idxs.append([idx for idx,i in enumerate(y_train_trend) if i == cla])
-
-        idxs[-1] = resample(idxs[-1], n_samples=len(idxs[0])+len(idxs[1])+len(idxs[2])+len(idxs[3]), random_state=0)
-
-        x_train_combine = x_train[idxs[0]]
-        y_train_trend_combine = y_train_trend[idxs[0]]
-        
-        for cla in range(4):
-            x_train_combine = np.vstack((x_train_combine, x_train[idxs[cla+1]]))
-            y_train_trend_combine = np.hstack((y_train_trend_combine,y_train_trend[idxs[cla+1]]))
-
+            y_train_trend_combine = pickle.load(handle)
 
         x_train_xgb = x_train_combine.reshape(-1, x_train_combine.shape[1]*x_train_combine.shape[2])
         x_train, x_test, y_train_trend, y_test_trend = train_test_split(x_train_xgb, y_train_trend_combine, test_size=0.3, random_state=42)
