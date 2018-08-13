@@ -80,19 +80,19 @@ class CryptoTrend():
             x_train[i] = x_raw[i:i+shift]
             diff = y_raw[i+shift+shift_y]-y_raw[i+shift]
 
-            if diff/y_raw[i+shift] > 0.02 :
+            if diff/y_raw[i+shift] > 0.015 :
 
                 y_train_trend[i] = 0
 
-            elif diff/y_raw[i+shift] > 0.01:
+            elif diff/y_raw[i+shift] > 0.0075:
 
                 y_train_trend[i] = 1
 
-            elif diff/y_raw[i+shift] < -0.02:
+            elif diff/y_raw[i+shift] < -0.015:
 
                 y_train_trend[i] = 3
 
-            elif diff/y_raw[i+shift] < -0.01:
+            elif diff/y_raw[i+shift] < -0.0075:
 
                 y_train_trend[i] = 2
 
@@ -219,7 +219,7 @@ class CryptoTrend():
 
         dic = {}
         dic['name'] = self.EXCHANGE
-        for prob, cla in zip(prediction,['bull','wbull','bear','wbear','n']):
+        for prob, cla in zip(prediction,['bull','wbull','wbear','bear','n']):
             dic[cla]="%.2f" % prob
         with open('predict/{}/predict_{}_{}.json'.format(self.COIN, self.EXCHANGE,self.MODEL_NAME), 'w') as outfile:
             json.dump(dic, outfile)
