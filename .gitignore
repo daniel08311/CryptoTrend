@@ -3,6 +3,7 @@ index.html
 model_list.json
 model/
 latest_data/
+latest_data_raw/
 training_data/
 training_data_raw/
 node_modules/
