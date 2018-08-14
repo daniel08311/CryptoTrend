@@ -4,6 +4,7 @@ import numpy as np
 import pickle
 import _thread
 import xgboost as xgb
+from datetime import datetime
 import math
 import json
 from sklearn.utils import resample
@@ -63,7 +64,18 @@ class CryptoTrend():
     def parse_train_data(self, exchange, coin, model_name):
   
         train_df = pd.read_csv("training_data_raw/{}/{}.csv".format(coin, exchange))
+     
+        time = train_df['time']
+        weekday = []
+        hour = []
+        
+        for i in time:
+            datetime_object = datetime.strptime(i, '%Y-%m-%d %H:%M:%S')
+            weekday.append(datetime_object.weekday())
+            hour.append(datetime_object.hour)
 
+        train_df = pd.concat([train_df, pd.get_dummies(weekday,prefix="day")], axis=1)
+        train_df = pd.concat([train_df, pd.get_dummies(hour,prefix="hour")], axis=1)
         train_df = train_df.dropna()
 
         y_raw = train_df["ohlcv_close"].values
@@ -82,19 +94,19 @@ class CryptoTrend():
             x_train[i] = x_raw[i:i+shift]
             diff = y_raw[i+shift+shift_y]-y_raw[i+shift]
 
-            if diff/y_raw[i+shift] > 0.012 :
+            if diff/y_raw[i+shift] > 0.02 :
 
                 y_train_trend[i] = 0
 
-            elif diff/y_raw[i+shift] > 0.005:
+            elif diff/y_raw[i+shift] > 0.01:
 
                 y_train_trend[i] = 1
 
-            elif diff/y_raw[i+shift] < -0.012:
+            elif diff/y_raw[i+shift] < -0.02:
 
                 y_train_trend[i] = 3
 
-            elif diff/y_raw[i+shift] < -0.005:
+            elif diff/y_raw[i+shift] < -0.01:
 
                 y_train_trend[i] = 2
 
@@ -180,14 +192,28 @@ class CryptoTrend():
         x_train_xgb = x_train_combine.reshape(-1, x_train_combine.shape[1]*x_train_combine.shape[2])
         x_train, x_test, y_train_trend, y_test_trend = train_test_split(x_train_xgb, y_train_trend_combine, test_size=0.3, random_state=42)
 
-        rf = RandomForestClassifier(n_estimators=50, max_depth=15, max_features=int(math.sqrt(x_train.shape[1])/4.2), random_state=0, n_jobs=self.THREAD)
+        rf = RandomForestClassifier(n_estimators=50, max_depth=25, max_features=int(math.sqrt(x_train.shape[1])/4.2), random_state=0, n_jobs=self.THREAD)
         rf.fit(x_train, y_train_trend)
+
+        # dtrain = xgb.DMatrix(x_train[:,rf.feature_importances_>0.0005], label=y_train_trend)
+        # dtest = xgb.DMatrix(x_test[:,rf.feature_importances_>0.0005], label=y_test_trend)
+
+        # params = {"objective": "multi:softmax", "booster":"gbtree", 'silent':1, 'max_depth':'4', 'eta':'0.01', 'subsample':'0.7', 'eval_metric':'mlogloss', 'num_class':5}
+        # params['nthread'] = 3
+        # evallist  = [(dtest,'eval')]
+        # num_round = 1500
+        # gbm_2 = xgb.train(params, dtrain, num_round, evallist)
 
         print("\nConfusuin Matrix :")
         print(confusion_matrix(rf.predict(x_test), y_test_trend))
         print("\nF1 Score : {}".format(f1_score(rf.predict(x_test), y_test_trend, average='macro')))
         print("\n=============================================\n")
-        self.save_pickle(rf, 'model/{}/rf_{}_{}.pickle'.format(coin, exchange, model_name))
+
+        # print("\nConfusuin Matrix s:")
+        # print(confusion_matrix(gbm_2.predict(dtest), y_test_trend))
+        # print("\nF1 Score : {}".format(f1_score(gbm_2.predict(dtest), y_test_trend, average='macro')))
+        # print("\n=============================================\n")
+        # self.save_pickle(rf, 'model/{}/rf_{}_{}.pickle'.format(coin, exchange, model_name))
 
         
     def train(self):
