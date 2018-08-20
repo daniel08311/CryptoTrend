@@ -11,6 +11,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import f1_score
+import telegram
 
 class CryptoTrend():
 
@@ -22,6 +23,8 @@ class CryptoTrend():
         self.MODEL_NAME = MODEL_NAME
         self.THREAD = THREAD
         self.COIN = COIN
+        self.bot = telegram.Bot(token='663139879:AAHDKxlaIurE8SW7ZKOT9hEQPCKuPAK4HMA')
+        
         if COIN == 'BTC':
             self.url = "http://jumpin.cc/BTC/WhaleSignal/"
         elif COIN == 'ETH':
@@ -221,6 +224,12 @@ class CryptoTrend():
         dic['name'] = self.EXCHANGE
         for prob, cla in zip(prediction,['bull','wbull','bear','wbear','n']):
             dic[cla]="%.2f" % prob
+            if prob > 0.45 and cla != 'n':
+                self.bot.send_message(
+                    chat_id = '-1001343599465', 
+                    text="[{} {}| {}]  {}: {} ".format(self.COIN, self.MODEL_NAME, self.EXCHANGE, cla, prob)
+                )
+
         with open('predict/{}/predict_{}_{}.json'.format(self.COIN, self.EXCHANGE,self.MODEL_NAME), 'w') as outfile:
             json.dump(dic, outfile)
 

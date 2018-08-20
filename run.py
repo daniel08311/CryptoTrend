@@ -3,6 +3,7 @@ import time
 import argparse
 import json
 import os
+import telegram
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-exchange", help="Choose a exchange to train with", type=str, nargs='?', default="binance")
