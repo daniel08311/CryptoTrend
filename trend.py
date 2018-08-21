@@ -4,6 +4,7 @@ import numpy as np
 import pickle
 import _thread
 import xgboost as xgb
+from datetime import datetime
 import math
 import json
 from sklearn.utils import resample
@@ -30,6 +31,7 @@ class CryptoTrend():
         elif COIN == 'ETH':
             self.url = "http://jumpin.cc/BTC/WhaleSignalETH/"
 
+
     def request_data(self, url, path):
 
         res = requests.get(url)
@@ -37,6 +39,7 @@ class CryptoTrend():
         f.write(res.text)
         f.close()
         return(True)
+
 
     def get_train(self):
         url = self.url + "training_data_{}_log.txt".format(self.EXCHANGE)
@@ -64,7 +67,18 @@ class CryptoTrend():
     def parse_train_data(self, exchange, coin, model_name):
   
         train_df = pd.read_csv("training_data_raw/{}/{}.csv".format(coin, exchange))
+     
+        time = train_df['time']
+        weekday = []
+        hour = []
+        
+        for i in time:
+            datetime_object = datetime.strptime(i, '%Y-%m-%d %H:%M:%S')
+            weekday.append(datetime_object.weekday())
+            hour.append(datetime_object.hour)
 
+        train_df = pd.concat([train_df, pd.get_dummies(weekday,prefix="day")], axis=1)
+        train_df = pd.concat([train_df, pd.get_dummies(hour,prefix="hour")], axis=1)
         train_df = train_df.dropna()
 
         y_raw = train_df["ohlcv_close"].values
@@ -74,7 +88,7 @@ class CryptoTrend():
         feats = len(x_raw[0])
         shift = self.SHIFT_X
         shift_y = self.SHIFT_Y
-
+        
         x_train = np.zeros((log_count-shift-shift_y,shift,feats))
         y_train_trend = np.zeros(log_count-shift-shift_y)
 
@@ -102,13 +116,29 @@ class CryptoTrend():
             else:
 
                 y_train_trend[i] = 4
-   
-        self.save_pickle(x_train, 'training_data/{}/x_train_{}_{}.pickle'.format(coin, exchange, model_name))
-        self.save_pickle(y_train_trend, 'training_data/{}/y_train_{}_{}.pickle'.format(coin, exchange, model_name))       
 
+        for i in range(5):
+            print("class {} instances = {}".format(i,sum(y_train_trend==i)))
+
+        idxs = []
+        for cla in range(5):
+            idxs.append([idx for idx,i in enumerate(y_train_trend) if i == cla])
+
+        idxs[-1] = resample(idxs[-1], n_samples=len(idxs[0])+len(idxs[1])+len(idxs[2])+len(idxs[3]), random_state=0)
+
+        x_train_combine = x_train[idxs[0]]
+        y_train_trend_combine = y_train_trend[idxs[0]]
+        
+        for cla in range(4):
+            x_train_combine = np.vstack((x_train_combine, x_train[idxs[cla+1]]))
+            y_train_trend_combine = np.hstack((y_train_trend_combine,y_train_trend[idxs[cla+1]]))
+
+        np.save('training_data/{}/x_train_{}_{}.npy'.format(coin, exchange, model_name), x_train_combine)
+        np.save('training_data/{}/y_train_{}_{}.npy'.format(coin, exchange, model_name), y_train_trend_combine)
+    
         return(True)
     
-    
+
     def parse_test_data(self, exchange, coin, model_name):
   
         train_df = pd.read_csv("latest_data_raw/{}/{}.csv".format(coin, exchange))
@@ -120,9 +150,11 @@ class CryptoTrend():
 
         latest = x_raw[-shift:].reshape((1, x_raw[-shift:].shape[0], x_raw[-shift:].shape[1]))
         latest = latest.reshape(-1, latest.shape[1]*latest.shape[2])
-    
-        self.save_pickle(latest, 'latest_data/{}/latest_{}_{}.pickle'.format(coin, exchange, model_name))
+
+        np.save('latest_data/{}/latest_{}_{}.npy'.format(coin, exchange, model_name), latest)
+
         return(True)
+
 
     def parse_train(self):
 
@@ -147,47 +179,44 @@ class CryptoTrend():
 
                 
     def save_pickle(self, object_, path):
-
-        with open(path, 'wb') as handle:
-            pickle.dump(object_, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    
-    def train_model(self, exchange, coin, model_name):
-
-        with open('training_data/{}/x_train_{}_{}.pickle'.format(coin, exchange, model_name), 'rb') as handle:
-            x_train = pickle.load(handle)
-
-        with open('training_data/{}/y_train_{}_{}.pickle'.format(coin, exchange, model_name), 'rb') as handle:
-            y_train_trend = pickle.load(handle)
-
-        for i in range(5):
-            print("class {} instances = {}".format(i,sum(y_train_trend==i)))
-
-        idxs = []
-        for cla in range(5):
-            idxs.append([idx for idx,i in enumerate(y_train_trend) if i == cla])
-
-        idxs[-1] = resample(idxs[-1], n_samples=len(idxs[0])+len(idxs[1])+len(idxs[2])+len(idxs[3]), random_state=0)
-
-        x_train_combine = x_train[idxs[0]]
-        y_train_trend_combine = y_train_trend[idxs[0]]
         
-        for cla in range(4):
-            x_train_combine = np.vstack((x_train_combine, x_train[idxs[cla+1]]))
-            y_train_trend_combine = np.hstack((y_train_trend_combine,y_train_trend[idxs[cla+1]]))
+        with open(path, 'wb') as handle:
+            try:
+                pickle.dump(object_, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            except Exception as e:
+                print(e)
 
+
+    def train_model(self, exchange, coin, model_name):
+        
+        x_train_combine = np.load('training_data/{}/x_train_{}_{}.npy'.format(coin, exchange, model_name))
+        y_train_trend_combine = np.load('training_data/{}/y_train_{}_{}.npy'.format(coin, exchange, model_name))
 
         x_train_xgb = x_train_combine.reshape(-1, x_train_combine.shape[1]*x_train_combine.shape[2])
         x_train, x_test, y_train_trend, y_test_trend = train_test_split(x_train_xgb, y_train_trend_combine, test_size=0.3, random_state=42)
 
-        rf = RandomForestClassifier(n_estimators=50, max_depth=15, max_features=int(math.sqrt(x_train.shape[1])/4.2), random_state=0, n_jobs=self.THREAD)
+        rf = RandomForestClassifier(n_estimators=50, max_depth=25, max_features=int(math.sqrt(x_train.shape[1])/4.2), random_state=0, n_jobs=self.THREAD)
         rf.fit(x_train, y_train_trend)
+
+        # dtrain = xgb.DMatrix(x_train[:,rf.feature_importances_>0.0005], label=y_train_trend)
+        # dtest = xgb.DMatrix(x_test[:,rf.feature_importances_>0.0005], label=y_test_trend)
+
+        # params = {"objective": "multi:softmax", "booster":"gbtree", 'silent':1, 'max_depth':'4', 'eta':'0.01', 'subsample':'0.7', 'eval_metric':'mlogloss', 'num_class':5}
+        # params['nthread'] = 3
+        # evallist  = [(dtest,'eval')]
+        # num_round = 1500
+        # gbm_2 = xgb.train(params, dtrain, num_round, evallist)
 
         print("\nConfusuin Matrix :")
         print(confusion_matrix(rf.predict(x_test), y_test_trend))
         print("\nF1 Score : {}".format(f1_score(rf.predict(x_test), y_test_trend, average='macro')))
         print("\n=============================================\n")
-        self.save_pickle(rf, 'model/{}/rf_{}_{}.pickle'.format(coin, exchange, model_name))
+
+        # print("\nConfusuin Matrix s:")
+        # print(confusion_matrix(gbm_2.predict(dtest), y_test_trend))
+        # print("\nF1 Score : {}".format(f1_score(gbm_2.predict(dtest), y_test_trend, average='macro')))
+        # print("\n=============================================\n")
+        # self.save_pickle(rf, 'model/{}/rf_{}_{}.pickle'.format(coin, exchange, model_name))
 
         
     def train(self):
@@ -205,9 +234,7 @@ class CryptoTrend():
         with open('model/{}/rf_{}_{}.pickle'.format(coin, exchange, model_name), 'rb') as handle:
             rf = pickle.load(handle)
 
-        with open('latest_data/{}/latest_{}_{}.pickle'.format(coin, exchange, model_name), 'rb') as handle:
-            latest = pickle.load(handle)
-
+        latest = np.load('latest_data/{}/latest_{}_{}.npy'.format(coin, exchange, model_name))
         predict = rf.predict_proba(latest)[0]
 
         print("\n##############################################################################\n")
@@ -222,7 +249,7 @@ class CryptoTrend():
 
         dic = {}
         dic['name'] = self.EXCHANGE
-        for prob, cla in zip(prediction,['bull','wbull','bear','wbear','n']):
+        for prob, cla in zip(prediction,['bull','wbull','wbear','bear','n']):
             dic[cla]="%.2f" % prob
             if prob > 0.45 and cla != 'n':
                 self.bot.send_message(
